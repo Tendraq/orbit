@@ -17,6 +17,9 @@ importers:
       '@clerk/nextjs':
         specifier: ^6.9.0
         version: 6.39.7(next@15.5.28(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@next/env':
+        specifier: ^16.4.2
+        version: 16.4.2
       '@orbit/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -460,6 +463,9 @@ packages:
 
   '@next/env@15.5.28':
     resolution: {integrity: sha512-xxW5EBI8fMPuVTPBW7LL980IRbuDXlbkUAwp9DDhtb4Lnich3nJ13uYpvrX4VE74hWPf6AvHHAMmGCidcHjbfg==}
+
+  '@next/env@16.4.2':
+    resolution: {integrity: sha512-nTUTFH7G5/J/fmpkjVLegOkqyKOP0CEsJcMsyO4UCYeN1su+YMW/MfaSErnJskL7XM+UDK6aTvslxsRCyya/sA==}
 
   '@next/swc-darwin-arm64@15.5.28':
     resolution: {integrity: sha512-dPoQYXcfSIqx5o+TOXVXO7kONK5qbtNRDeiTfII0bT3puGIT6VF5e0QwmxNZfEZ5Zety5f3m9P/p4xqwfiLlPg==}
@@ -1498,6 +1504,8 @@ snapshots:
       '@jridgewell/sourcemap-codec': 1.6.0
 
   '@next/env@15.5.28': {}
+
+  '@next/env@16.4.2': {}
 
   '@next/swc-darwin-arm64@15.5.28':
     optional: true

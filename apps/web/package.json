@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.9.0",
+    "@next/env": "^16.4.2",
     "@orbit/db": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@trpc/client": "^11.0.0",
