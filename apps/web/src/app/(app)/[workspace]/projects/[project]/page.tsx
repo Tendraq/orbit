@@ -1,0 +1,6 @@
+import { redirect } from "next/navigation";
+
+export default async function ProjectIndex({ params }: { params: Promise<{ workspace: string; project: string }> }) {
+  const { workspace, project } = await params;
+  redirect(`/${workspace}/projects/${project}/overview`);
+}

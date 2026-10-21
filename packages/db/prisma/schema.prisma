@@ -1,0 +1,709 @@
+// Orbit: full schema
+// Covers the whole project lifecycle + the NGO pack.
+// Built to grow: custom fields (Json), soft deletes (deletedAt),
+// per-workspace modules and terminology, audit log from day one.
+//
+// NOTE ON MONEY: amounts use Float for simplicity in this starter.
+// Before real financial use, switch to integer cents or Decimal.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum Role {
+  OWNER
+  ADMIN
+  MEMBER
+  GUEST // view-only: donors, partners, clients
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+}
+
+enum ProjectPhase {
+  INITIATING
+  PLANNING
+  EXECUTING
+  MONITORING
+  CLOSING
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum Health {
+  GREEN
+  AMBER
+  RED
+}
+
+enum TaskStatus {
+  BACKLOG
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum DependencyType {
+  FINISH_TO_START
+  START_TO_START
+  FINISH_TO_FINISH
+  START_TO_FINISH
+}
+
+enum GateStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum RiskStatus {
+  OPEN
+  MITIGATING
+  CLOSED
+  OCCURRED
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum ChangeStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum DocumentKind {
+  NOTE
+  MEETING
+  DECISION
+  CHARTER
+  OTHER
+}
+
+enum LessonKind {
+  WENT_WELL
+  TO_IMPROVE
+  RECOMMENDATION
+}
+
+enum LogframeLevel {
+  GOAL
+  OUTCOME
+  OUTPUT
+  ACTIVITY
+}
+
+enum ReportStatus {
+  DRAFT
+  SUBMITTED
+  ACCEPTED
+}
+
+// ───────────────────────── People & organizations ─────────────────────────
+
+model User {
+  id            String         @id @default(cuid())
+  clerkId       String         @unique
+  email         String         @unique
+  name          String?
+  imageUrl      String?
+  createdAt     DateTime       @default(now())
+  memberships   Membership[]
+  assigned      Task[]         @relation("TaskAssignee")
+  comments      Comment[]
+  timeEntries   TimeEntry[]
+  notifications Notification[]
+}
+
+model Workspace {
+  id             String            @id @default(cuid())
+  name           String
+  slug           String            @unique
+  sector         String            @default("GENERAL") // GENERAL, NGO, AGENCY ...
+  enabledModules String[]          @default(["core", "budget", "risks", "changes", "stakeholders", "documents", "evaluation", "time"])
+  terminology    Json? // e.g. {"beneficiary":"Client"}
+  createdAt      DateTime          @default(now())
+  deletedAt      DateTime?
+  memberships    Membership[]
+  invitations    Invitation[]
+  projects       Project[]
+  labels         Label[]
+  customFields   CustomFieldDef[]
+  donors         Donor[]
+  grants         Grant[]
+  partners       Partner[]
+  beneficiaries  Beneficiary[]
+  auditLogs      AuditLog[]
+}
+
+model Membership {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        Role      @default(MEMBER)
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model Invitation {
+  id          String       @id @default(cuid())
+  workspaceId String
+  email       String
+  role        Role         @default(MEMBER)
+  token       String       @unique
+  status      InviteStatus @default(PENDING)
+  invitedById String
+  createdAt   DateTime     @default(now())
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+model Label {
+  id          String      @id @default(cuid())
+  workspaceId String
+  name        String
+  color       String      @default("#6366f1")
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks       TaskLabel[]
+
+  @@unique([workspaceId, name])
+}
+
+// Lets each organization add its own fields to tasks or projects.
+// Values live in the "customFields" Json column of Task / Project.
+model CustomFieldDef {
+  id          String    @id @default(cuid())
+  workspaceId String
+  entity      String // "TASK" | "PROJECT"
+  key         String
+  label       String
+  type        String // "TEXT" | "NUMBER" | "DATE" | "SELECT"
+  options     String[]
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, entity, key])
+}
+
+// ───────────────────────── Projects & tasks ─────────────────────────
+
+model Project {
+  id            String        @id @default(cuid())
+  workspaceId   String
+  name          String
+  code          String?
+  description   String?
+  phase         ProjectPhase  @default(INITIATING)
+  status        ProjectStatus @default(ACTIVE)
+  health        Health        @default(GREEN)
+  currency      String        @default("USD")
+  startDate     DateTime?
+  endDate       DateTime?
+  customFields  Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+  workspace     Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  tasks         Task[]
+  milestones    Milestone[]
+  gates         StageGate[]
+  budgetLines   BudgetLine[]
+  expenses      Expense[]
+  risks         Risk[]
+  issues        Issue[]
+  changes       ChangeRequest[]
+  stakeholders  Stakeholder[]
+  documents     Document[]
+  lessons       Lesson[]
+  evaluations   Evaluation[]
+  logframeItems LogframeItem[]
+  indicators    Indicator[]
+  donorReports  DonorReport[]
+  grants        Grant[]
+  beneficiaries Beneficiary[]
+
+  @@index([workspaceId])
+}
+
+model Task {
+  id            String           @id @default(cuid())
+  projectId     String
+  parentId      String? // set = this is a subtask
+  title         String
+  description   String?
+  status        TaskStatus       @default(TODO)
+  priority      Priority         @default(MEDIUM)
+  assigneeId    String?
+  reporterId    String?
+  startDate     DateTime?
+  dueDate       DateTime?
+  completedAt   DateTime?
+  estimateHours Float?
+  position      Float            @default(0)
+  customFields  Json?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  deletedAt     DateTime?
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent        Task?            @relation("Subtasks", fields: [parentId], references: [id], onDelete: Cascade)
+  subtasks      Task[]           @relation("Subtasks")
+  assignee      User?            @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  comments      Comment[]
+  attachments   Attachment[]
+  timeEntries   TimeEntry[]
+  labels        TaskLabel[]
+  dependencies  TaskDependency[] @relation("TaskDeps")
+  dependents    TaskDependency[] @relation("TaskDependents")
+
+  @@index([projectId])
+  @@index([parentId])
+  @@index([assigneeId])
+}
+
+model TaskLabel {
+  taskId  String
+  labelId String
+  task    Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  label   Label  @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, labelId])
+}
+
+model TaskDependency {
+  id          String         @id @default(cuid())
+  taskId      String // this task...
+  dependsOnId String // ...depends on this one
+  type        DependencyType @default(FINISH_TO_START)
+  lagDays     Int            @default(0)
+  task        Task           @relation("TaskDeps", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOn   Task           @relation("TaskDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnId])
+}
+
+model Comment {
+  id        String    @id @default(cuid())
+  taskId    String
+  authorId  String
+  body      String
+  createdAt DateTime  @default(now())
+  deletedAt DateTime?
+  task      Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+// File metadata only. Actual upload storage (R2/S3) is added later.
+model Attachment {
+  id         String   @id @default(cuid())
+  taskId     String
+  uploaderId String
+  fileName   String
+  url        String
+  sizeBytes  Int      @default(0)
+  createdAt  DateTime @default(now())
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TimeEntry {
+  id        String   @id @default(cuid())
+  projectId String
+  taskId    String
+  userId    String
+  minutes   Int
+  date      DateTime @default(now())
+  note      String?
+  billable  Boolean  @default(false)
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([taskId])
+  @@index([userId])
+}
+
+model Milestone {
+  id        String    @id @default(cuid())
+  projectId String
+  name      String
+  dueDate   DateTime
+  doneAt    DateTime?
+  project   Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  workspaceId String?
+  type        String
+  title       String
+  body        String?
+  link        String?
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+// ───────────────────────── Lifecycle: stage gates ─────────────────────────
+
+// One gate per phase. A project can only leave a phase when its gate is approved.
+// requirements = [{ id, label, done }]
+model StageGate {
+  id            String       @id @default(cuid())
+  projectId     String
+  phase         ProjectPhase
+  status        GateStatus   @default(PENDING)
+  requirements  Json
+  submittedById String?
+  submittedAt   DateTime?
+  decidedById   String?
+  decidedAt     DateTime?
+  decisionNote  String?
+  project       Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, phase])
+}
+
+// ───────────────────────── Planning & control ─────────────────────────
+
+model BudgetLine {
+  id          String    @id @default(cuid())
+  projectId   String
+  category    String
+  description String?
+  planned     Float     @default(0)
+  grantId     String?
+  createdAt   DateTime  @default(now())
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  expenses    Expense[]
+
+  @@index([projectId])
+}
+
+model Expense {
+  id           String        @id @default(cuid())
+  projectId    String
+  budgetLineId String?
+  amount       Float
+  date         DateTime      @default(now())
+  description  String
+  status       ExpenseStatus @default(PENDING)
+  createdById  String
+  decidedById  String?
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  budgetLine   BudgetLine?   @relation(fields: [budgetLineId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([budgetLineId])
+}
+
+model Risk {
+  id          String     @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  probability Int        @default(3) // 1-5
+  impact      Int        @default(3) // 1-5
+  status      RiskStatus @default(OPEN)
+  response    String? // mitigation plan
+  ownerId     String?
+  createdAt   DateTime   @default(now())
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Issue {
+  id          String      @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  severity    Priority    @default(MEDIUM)
+  status      IssueStatus @default(OPEN)
+  assigneeId  String?
+  createdAt   DateTime    @default(now())
+  resolvedAt  DateTime?
+  project     Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model ChangeRequest {
+  id                 String       @id @default(cuid())
+  projectId          String
+  title              String
+  description        String?
+  reason             String?
+  costImpact         Float        @default(0)
+  scheduleImpactDays Int          @default(0)
+  scopeImpact        String?
+  status             ChangeStatus @default(DRAFT)
+  requestedById      String
+  decidedById        String?
+  decidedAt          DateTime?
+  decisionNote       String?
+  createdAt          DateTime     @default(now())
+  project            Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Stakeholder {
+  id           String  @id @default(cuid())
+  projectId    String
+  name         String
+  organization String?
+  role         String?
+  influence    Int     @default(3) // 1-5
+  interest     Int     @default(3) // 1-5
+  engagement   String? // how we engage them
+  notes        String?
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Document {
+  id          String       @id @default(cuid())
+  projectId   String
+  title       String
+  kind        DocumentKind @default(NOTE)
+  content     String       @default("")
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ───────────────────────── Evaluation & closure ─────────────────────────
+
+model Lesson {
+  id          String     @id @default(cuid())
+  projectId   String
+  kind        LessonKind @default(WENT_WELL)
+  title       String
+  body        String?
+  createdById String
+  createdAt   DateTime   @default(now())
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+model Evaluation {
+  id        String   @id @default(cuid())
+  projectId String
+  type      String // MIDTERM | FINAL | OTHER
+  title     String
+  summary   String?
+  score     Float? // optional overall rating
+  date      DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ───────────────────────── NGO pack ─────────────────────────
+
+model Donor {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  name         String
+  contactEmail String?
+  notes        String?
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  grants       Grant[]
+
+  @@index([workspaceId])
+}
+
+model Grant {
+  id          String    @id @default(cuid())
+  workspaceId String
+  donorId     String
+  projectId   String?
+  title       String
+  amount      Float
+  currency    String    @default("USD")
+  startDate   DateTime?
+  endDate     DateTime?
+  conditions  String?
+  createdAt   DateTime  @default(now())
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  donor       Donor     @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId])
+  @@index([projectId])
+}
+
+model Partner {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  name         String
+  type         String? // e.g. Sub-grantee, Implementing partner
+  country      String?
+  contactEmail String?
+  status       String    @default("ACTIVE")
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// Privacy by design: NO names are stored. Use a code only.
+model Beneficiary {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  projectId    String?
+  code         String
+  gender       String?
+  ageGroup     String?
+  location     String?
+  disability   Boolean   @default(false)
+  consentGiven Boolean   @default(false)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  project      Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, code])
+  @@index([projectId])
+}
+
+// Logframe: Goal > Outcome > Output > Activity
+model LogframeItem {
+  id                  String         @id @default(cuid())
+  projectId           String
+  parentId            String?
+  level               LogframeLevel
+  code                String // e.g. "1.2"
+  statement           String
+  assumptions         String?
+  meansOfVerification String?
+  position            Int            @default(0)
+  project             Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parent              LogframeItem?  @relation("LogframeTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children            LogframeItem[] @relation("LogframeTree")
+  indicators          Indicator[]
+
+  @@index([projectId])
+}
+
+model Indicator {
+  id             String          @id @default(cuid())
+  projectId      String
+  logframeItemId String?
+  name           String
+  unit           String          @default("number")
+  baseline       Float           @default(0)
+  target         Float
+  frequency      String          @default("QUARTERLY")
+  dataSource     String?
+  disaggregateBy String[]
+  createdAt      DateTime        @default(now())
+  project        Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  logframeItem   LogframeItem?   @relation(fields: [logframeItemId], references: [id], onDelete: SetNull)
+  values         IndicatorValue[]
+
+  @@index([projectId])
+}
+
+model IndicatorValue {
+  id             String    @id @default(cuid())
+  indicatorId    String
+  period         String // e.g. "2026-Q1"
+  periodStart    DateTime
+  value          Float
+  disaggregation Json? // e.g. {"female":120,"male":80}
+  note           String?
+  recordedById   String
+  createdAt      DateTime  @default(now())
+  indicator      Indicator @relation(fields: [indicatorId], references: [id], onDelete: Cascade)
+
+  @@index([indicatorId])
+}
+
+model DonorReport {
+  id          String       @id @default(cuid())
+  projectId   String
+  grantId     String?
+  title       String
+  periodStart DateTime
+  periodEnd   DateTime
+  narrative   String       @default("")
+  status      ReportStatus @default(DRAFT)
+  createdById String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+}
+
+// ───────────────────────── Audit ─────────────────────────
+
+model AuditLog {
+  id          String     @id @default(cuid())
+  workspaceId String?
+  userId      String?
+  action      String // e.g. "task.created"
+  entityType  String // e.g. "Task"
+  entityId    String
+  metadata    Json?
+  createdAt   DateTime   @default(now())
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([workspaceId, createdAt])
+  @@index([entityType, entityId])
+}

@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-slate-50 text-slate-900;
+    background-image:
+      radial-gradient(900px 420px at 85% -120px, rgba(106, 62, 234, 0.09), transparent),
+      radial-gradient(700px 360px at -10% 0, rgba(236, 72, 153, 0.05), transparent);
+    background-attachment: fixed;
+  }
+  h1, h2, h3 { letter-spacing: -0.015em; }
+  ::selection { background: rgba(106, 62, 234, 0.22); }
+  /* slimmer scrollbars */
+  * { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-brand-600 via-fuchsia-500 to-orange-400 bg-clip-text text-transparent;
+  }
+  .glass {
+    @apply bg-white/70 backdrop-blur-xl;
+  }
+}

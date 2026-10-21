@@ -1,0 +1,27 @@
+{
+  "name": "orbit",
+  "private": true,
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "db:generate": "pnpm --filter @orbit/db generate",
+    "db:migrate": "pnpm --filter @orbit/db migrate",
+    "db:seed": "pnpm --filter @orbit/db seed",
+    "db:studio": "pnpm --filter @orbit/db studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "prisma",
+      "esbuild",
+      "sharp",
+      "@clerk/shared"
+    ]
+  }
+}
