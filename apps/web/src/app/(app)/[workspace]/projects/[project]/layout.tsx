@@ -44,6 +44,7 @@ export default function ProjectLayout({
     ...(value.has("documents") ? [{ path: "documents", text: "Documents" }] : []),
     ...(value.has("ngo") ? [{ path: "logframe", text: "Logframe" }, { path: "indicators", text: "Indicators" }, { path: "reports", text: "Donor reports" }] : []),
     ...(value.has("evaluation") ? [{ path: "evaluation", text: "Evaluation" }] : []),
+    { path: "data", text: "Import / export" },
     { path: "closure", text: "Closure" },
     ...(value.can("project:update") ? [{ path: "settings", text: "Settings" }] : []),
   ];
@@ -71,7 +72,11 @@ export default function ProjectLayout({
                 <>
                   <MenuItem onClick={() => { navigator.clipboard.writeText(window.location.href); close(); }}>Copy link to this page</MenuItem>
                   <MenuItem onClick={() => { close(); window.print(); }}>Print this page</MenuItem>
-                  <MenuItem href={`/api/export/tasks?projectId=${projectId}`} external onClick={close}>Download tasks (CSV)</MenuItem>
+                  <MenuDivider />
+                  <MenuItem href={`${base}/data`} onClick={close}>Import tasks…</MenuItem>
+                  <MenuItem href={`/api/export/tasks?projectId=${projectId}`} external onClick={close}>Download tasks (Excel / CSV)</MenuItem>
+                  <MenuItem href={`/api/export/msproject?projectId=${projectId}`} external onClick={close}>Download for Microsoft Project</MenuItem>
+                  <MenuDivider />
                   {value.has("ngo") && <MenuItem href={`${base}/reports`} onClick={close}>Donor reports</MenuItem>}
                   <MenuItem href={`${base}/closure`} onClick={close}>Closure checklist</MenuItem>
                   {value.can("project:update") && (

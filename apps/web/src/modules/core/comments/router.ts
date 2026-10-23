@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardTask, log } from "@/server/api/guard";
 import { notify } from "@/server/notify";
@@ -17,11 +18,12 @@ export const commentRouter = router({
   create: protectedProcedure
     .input(z.object({ taskId: z.string(), body: z.string().min(1).max(5000) }))
     .mutation(async ({ ctx, input }) => {
-      const { task, workspace } = await guardTask(ctx, input.taskId, "comment:create");
+      const { task, project, workspace } = await guardTask(ctx, input.taskId, "comment:create");
       const comment = await ctx.db.comment.create({
         data: { taskId: task.id, authorId: ctx.user.id, body: input.body },
       });
       await log(ctx, workspace.id, "comment.created", "Comment", comment.id);
+      await emit(ctx.db, workspace.id, "comment.created", { title: task.title, project: project.name, by: ctx.user.name ?? ctx.user.email, note: input.body.slice(0, 200), path: `/tasks/${task.id}` });
 
       // Tell the assignee and the person who created the task
       const people = [task.assigneeId, task.reporterId].filter(

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardProject, log } from "@/server/api/guard";
 import { notifyMany, approverIds } from "@/server/notify";
@@ -75,6 +76,7 @@ export const donorReportRouter = router({
       await ctx.db.donorReport.update({ where: { id: r.id }, data: { status: input.status } });
       await log(ctx, workspace.id, `report.${input.status.toLowerCase()}`, "DonorReport", r.id);
       if (input.status === "SUBMITTED") {
+        await emit(ctx.db, workspace.id, "report.submitted", { title: r.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/reports` });
         await notifyMany(ctx.db, (await approverIds(ctx.db, workspace.id)).filter((id) => id !== ctx.user.id), {
           workspaceId: workspace.id,
           type: "report",

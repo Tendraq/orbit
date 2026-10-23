@@ -43,6 +43,7 @@ export function CommandPalette() {
       { id: `${w.id}-pf`, label: `${w.name}: Portfolio`, hint: "All projects at a glance", href: `/${w.slug}/portfolio`, group: "Organizations" },
       { id: `${w.id}-m`, label: `${w.name}: Members`, hint: "People and invitations", href: `/${w.slug}/members`, group: "Organizations" },
       { id: `${w.id}-a`, label: `${w.name}: Activity`, hint: "Who did what", href: `/${w.slug}/activity`, group: "Organizations" },
+      { id: `${w.id}-i`, label: `${w.name}: Integrations`, hint: "Calendar, Slack, Teams, API", href: `/${w.slug}/integrations`, group: "Organizations" },
     ]);
     const projs: Item[] = (projects.data ?? []).map((p) => ({
       id: p.id, label: p.name, hint: `${p.workspaceName}${p.code ? ` · ${p.code}` : ""}`,

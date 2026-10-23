@@ -23,6 +23,8 @@ import { fundingRouter } from "@/modules/ngo/grants/router";
 import { partnerRouter } from "@/modules/ngo/partners/router";
 import { beneficiaryRouter } from "@/modules/ngo/beneficiaries/router";
 import { donorReportRouter } from "@/modules/ngo/donor-reports/router";
+import { integrationRouter } from "@/modules/integrations/router";
+import { exchangeRouter } from "@/modules/data-exchange/router";
 
 // Every module's endpoints are joined here
 export const appRouter = router({
@@ -54,6 +56,9 @@ export const appRouter = router({
   partner: partnerRouter,
   beneficiary: beneficiaryRouter,
   donorReport: donorReportRouter,
+  // connections to other tools
+  integration: integrationRouter,
+  exchange: exchangeRouter,
 });
 
 export type AppRouter = typeof appRouter;

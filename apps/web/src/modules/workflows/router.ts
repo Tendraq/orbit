@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import type { PrismaClient, ProjectPhase } from "@orbit/db";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardProject, log } from "@/server/api/guard";
 import { notify, notifyMany, approverIds } from "@/server/notify";
@@ -100,6 +101,7 @@ export const workflowRouter = router({
         data: { status: "SUBMITTED", submittedById: ctx.user.id, submittedAt: new Date(), decisionNote: null },
       });
       await log(ctx, workspace.id, "gate.submitted", "StageGate", gate.id, { phase: project.phase });
+      await emit(ctx.db, workspace.id, "gate.submitted", { project: project.name, phase: PHASE_LABELS[project.phase], by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/overview` });
       await notifyMany(ctx.db, (await approverIds(ctx.db, workspace.id)).filter((id) => id !== ctx.user.id), {
         workspaceId: workspace.id,
         type: "gate",
@@ -140,6 +142,7 @@ export const workflowRouter = router({
       await log(ctx, workspace.id, input.approve ? "gate.approved" : "gate.rejected", "StageGate", gate.id, {
         phase: project.phase,
       });
+      await emit(ctx.db, workspace.id, input.approve ? "gate.approved" : "gate.rejected", { project: project.name, phase: PHASE_LABELS[project.phase], note: input.note ?? "", by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/overview` });
       await notify(ctx.db, gate.submittedById, {
         workspaceId: workspace.id,
         type: "gate",

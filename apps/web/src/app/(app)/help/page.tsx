@@ -32,6 +32,10 @@ const FAQ: [string, string][] = [
   ["How is project health decided?", "You set it yourself. Orbit also shows a suggestion based on overdue tasks, budget use and open risks, with the reasons listed."],
   ["Can I rename “Beneficiary” or “Donor”?", "Yes. Open Settings in your organization and change the words under “Your words”."],
   ["How do donor reports work?", "In a project, open Donor reports, choose a period and click Generate draft. Orbit writes a first version from your indicators, budget, tasks and risks. You edit it, submit it, and print it as a PDF."],
+  ["How do I bring in a plan from Excel or Microsoft Project?", "Open a project, choose Import / export, and drop in an Excel (.xlsx), CSV or Microsoft Project XML file. Orbit shows you what it found before anything is saved. In Project use File, Save As, XML Format."],
+  ["Can I see due dates in Outlook or Google Calendar?", "Yes. Open your organization, go to Integrations, and copy your private calendar link into Outlook, Google Calendar or your phone. It works once Orbit is online at a public address."],
+  ["How do I get alerts in Slack or Microsoft Teams?", "Owners and admins can add a connection under Integrations. Paste a Slack incoming-webhook address, or a Teams Workflows webhook address (the old Teams connectors were retired), choose the events, and use Send test."],
+  ["Can another program read or update my data?", "Yes, through the API. Under Integrations create a key, then connect tools such as Zapier, Make, Power Automate or a script. Read-only keys cannot change anything."],
   ["Why can I not see some menus?", "Some menus depend on your role and on which modules your organization switched on. Owners can change modules in Settings."],
 ];
 
@@ -105,6 +109,21 @@ export default function HelpPage() {
             <li key={k} className="rounded-lg border border-slate-200/70 bg-white px-3 py-2 text-sm shadow-soft"><b>{m.label}</b><span className="block text-xs text-slate-500">{m.description}</span></li>
           ))}
         </ul>
+      </section>
+
+      <section>
+        <SectionTitle>Connect your other tools</SectionTitle>
+        <div className="grid gap-3 md:grid-cols-2">
+          {[
+            ["Excel and CSV", "Import tasks from a spreadsheet; download tasks, budgets, expenses, indicators, risks and time. Project, Import / export tab."],
+            ["Microsoft Project", "Import a plan saved as XML, or export an Orbit plan to open in Project. This is a file exchange, not a live link."],
+            ["Calendars", "A private link that shows your due dates and milestones in Outlook, Google Calendar or your phone. Organization, Integrations."],
+            ["Slack and Teams", "Messages for approvals, completed tasks, expenses and more. Owners and admins set this up under Integrations."],
+            ["API and webhooks", "Let Zapier, Make, Power Automate or your own scripts read and update Orbit. Field-data tools can push indicator results in."],
+          ].map(([t, d]) => (
+            <Card key={t}><p className="font-medium">{t}</p><p className="text-sm text-slate-600">{d}</p></Card>
+          ))}
+        </div>
       </section>
 
       <section id="shortcuts">

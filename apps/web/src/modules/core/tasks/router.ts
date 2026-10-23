@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardProject, guardTask, log } from "@/server/api/guard";
 import { notify } from "@/server/notify";
@@ -87,6 +88,7 @@ export const taskRouter = router({
       data: { ...input, reporterId: ctx.user.id },
     });
     await log(ctx, workspace.id, input.parentId ? "subtask.created" : "task.created", "Task", task.id);
+    await emit(ctx.db, workspace.id, "task.created", { title: task.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/tasks/${task.id}` });
     if (task.assigneeId && task.assigneeId !== ctx.user.id) {
       await notify(ctx.db, task.assigneeId, {
         workspaceId: workspace.id,
@@ -115,6 +117,7 @@ export const taskRouter = router({
       status: status ?? null,
       title: input.title ?? null,
     });
+    await emit(ctx.db, workspace.id, status === "DONE" && task.status !== "DONE" ? "task.completed" : "task.updated", { title: updated.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/tasks/${task.id}` });
     if (input.assigneeId && input.assigneeId !== task.assigneeId && input.assigneeId !== ctx.user.id) {
       await notify(ctx.db, input.assigneeId, {
         workspaceId: workspace.id,
@@ -131,8 +134,8 @@ export const taskRouter = router({
   move: protectedProcedure
     .input(z.object({ taskId: z.string(), status: taskStatus, position: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      const { task } = await guardTask(ctx, input.taskId, "task:update");
-      return ctx.db.task.update({
+      const { task, project, workspace } = await guardTask(ctx, input.taskId, "task:update");
+      const moved = await ctx.db.task.update({
         where: { id: task.id },
         data: {
           status: input.status,
@@ -140,6 +143,10 @@ export const taskRouter = router({
           completedAt: input.status === "DONE" ? new Date() : null,
         },
       });
+      if (input.status === "DONE" && task.status !== "DONE") {
+        await emit(ctx.db, workspace.id, "task.completed", { title: moved.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/tasks/${task.id}` });
+      }
+      return moved;
     }),
 
   // Soft delete: the row stays in the database, hidden (30-day recovery later)

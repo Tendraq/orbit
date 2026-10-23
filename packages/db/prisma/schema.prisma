@@ -144,6 +144,7 @@ model User {
   email         String         @unique
   name          String?
   imageUrl      String?
+  calendarToken String?        @unique // secret for the personal calendar feed
   createdAt     DateTime       @default(now())
   memberships   Membership[]
   assigned      Task[]         @relation("TaskAssignee")
@@ -170,6 +171,8 @@ model Workspace {
   grants         Grant[]
   partners       Partner[]
   beneficiaries  Beneficiary[]
+  apiKeys        ApiKey[]
+  webhooks       Webhook[]
   auditLogs      AuditLog[]
 }
 
@@ -689,6 +692,57 @@ model DonorReport {
   project     Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@index([projectId])
+}
+
+// ───────────────────────── Integrations ─────────────────────────
+
+// Keys for the public REST API. Only a hash is stored; the key is shown once.
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  prefix      String // first characters, so people can recognise a key
+  keyHash     String    @unique
+  scope       String    @default("READ") // READ | WRITE
+  createdById String
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+  revokedAt   DateTime?
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+// Sends events to Slack, Microsoft Teams, or any web address.
+model Webhook {
+  id          String            @id @default(cuid())
+  workspaceId String
+  name        String
+  kind        String            @default("GENERIC") // SLACK | TEAMS | GENERIC
+  url         String
+  secret      String // signs generic webhooks
+  events      String[]
+  active      Boolean           @default(true)
+  createdById String
+  createdAt   DateTime          @default(now())
+  workspace   Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deliveries  WebhookDelivery[]
+
+  @@index([workspaceId])
+}
+
+model WebhookDelivery {
+  id         String   @id @default(cuid())
+  webhookId  String
+  event      String
+  ok         Boolean
+  statusCode Int?
+  error      String?
+  durationMs Int      @default(0)
+  createdAt  DateTime @default(now())
+  webhook    Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  @@index([webhookId, createdAt])
 }
 
 // ───────────────────────── Audit ─────────────────────────

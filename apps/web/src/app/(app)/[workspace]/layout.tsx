@@ -46,6 +46,7 @@ export default function WorkspaceLayout({
       : []),
     { href: `/${slug}/members`, text: "Members" },
     { href: `/${slug}/activity`, text: "Activity" },
+    { href: `/${slug}/integrations`, text: "Integrations" },
     ...(ws.can("workspace:update") ? [{ href: `/${slug}/settings`, text: "Settings" }] : []),
   ];
 

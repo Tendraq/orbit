@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardProject, log } from "@/server/api/guard";
 import { notify, notifyMany, approverIds } from "@/server/notify";
@@ -65,6 +66,7 @@ export const changeRouter = router({
     }
     await ctx.db.changeRequest.update({ where: { id: change.id }, data: { status: "SUBMITTED" } });
     await log(ctx, workspace.id, "change.submitted", "ChangeRequest", change.id);
+    await emit(ctx.db, workspace.id, "change.submitted", { title: change.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/changes` });
     await notifyMany(ctx.db, (await approverIds(ctx.db, workspace.id)).filter((id) => id !== ctx.user.id), {
       workspaceId: workspace.id,
       type: "change",
@@ -93,6 +95,7 @@ export const changeRouter = router({
         },
       });
       await log(ctx, workspace.id, input.approve ? "change.approved" : "change.rejected", "ChangeRequest", change.id);
+      await emit(ctx.db, workspace.id, input.approve ? "change.approved" : "change.rejected", { title: change.title, project: project.name, by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/changes` });
       await notify(ctx.db, change.requestedById, {
         workspaceId: workspace.id,
         type: "change",

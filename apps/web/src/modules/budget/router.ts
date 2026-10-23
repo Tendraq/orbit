@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
+import { emit } from "@/server/events";
 import { router, protectedProcedure } from "@/server/api/trpc";
 import { guardProject, log } from "@/server/api/guard";
 import { notifyMany, approverIds } from "@/server/notify";
@@ -82,6 +83,7 @@ export const budgetRouter = router({
       }
       const expense = await ctx.db.expense.create({ data: { ...input, createdById: ctx.user.id } });
       await log(ctx, workspace.id, "expense.created", "Expense", expense.id, { amount: input.amount });
+      await emit(ctx.db, workspace.id, "expense.created", { title: input.description, project: project.name, amount: input.amount, currency: project.currency, by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/budget` });
       await notifyMany(ctx.db, (await approverIds(ctx.db, workspace.id)).filter((id) => id !== ctx.user.id), {
         workspaceId: workspace.id,
         type: "expense",
@@ -97,12 +99,13 @@ export const budgetRouter = router({
     .mutation(async ({ ctx, input }) => {
       const exp = await ctx.db.expense.findUnique({ where: { id: input.expenseId } });
       if (!exp) throw new TRPCError({ code: "NOT_FOUND" });
-      const { workspace } = await guardProject(ctx, exp.projectId, "expense:approve", "budget");
+      const { project, workspace } = await guardProject(ctx, exp.projectId, "expense:approve", "budget");
       const updated = await ctx.db.expense.update({
         where: { id: exp.id },
         data: { status: input.approve ? "APPROVED" : "REJECTED", decidedById: ctx.user.id },
       });
       await log(ctx, workspace.id, input.approve ? "expense.approved" : "expense.rejected", "Expense", exp.id);
+      await emit(ctx.db, workspace.id, input.approve ? "expense.approved" : "expense.rejected", { title: exp.description, project: project.name, amount: exp.amount, currency: project.currency, by: ctx.user.name ?? ctx.user.email, path: `/${workspace.slug}/projects/${project.id}/budget` });
       return updated;
     }),
 

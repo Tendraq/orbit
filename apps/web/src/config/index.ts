@@ -84,3 +84,23 @@ export const STATUS_LABELS: Record<(typeof TASK_STATUSES)[number], string> = {
   DONE: "Done",
 };
 export const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
+
+// Events that can be sent to Slack, Teams or a web address
+export const WEBHOOK_EVENTS = [
+  { key: "task.created", label: "Task created" },
+  { key: "task.completed", label: "Task completed" },
+  { key: "task.updated", label: "Task changed" },
+  { key: "comment.created", label: "Comment added" },
+  { key: "gate.submitted", label: "Stage gate submitted for approval" },
+  { key: "gate.approved", label: "Stage gate approved" },
+  { key: "gate.rejected", label: "Stage gate sent back" },
+  { key: "change.submitted", label: "Change request submitted" },
+  { key: "change.approved", label: "Change request approved" },
+  { key: "change.rejected", label: "Change request rejected" },
+  { key: "expense.created", label: "Expense recorded" },
+  { key: "expense.approved", label: "Expense approved" },
+  { key: "expense.rejected", label: "Expense rejected" },
+  { key: "report.submitted", label: "Donor report submitted" },
+  { key: "import.completed", label: "Data imported" },
+] as const;
+export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]["key"];

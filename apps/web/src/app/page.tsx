@@ -29,6 +29,7 @@ const MENUS: { label: string; items: [string, string, string][] }[] = [
     items: [
       ["How it works", "#how", "From setup to your first report"],
       ["Security and privacy", "#security", "Roles, audit trail, privacy"],
+      ["Connects to your tools", "#integrations", "Excel, Project, calendars, chat"],
       ["Questions", "#faq", "Straight answers"],
     ],
   },
@@ -73,7 +74,9 @@ const FAQ: [string, string][] = [
   ["Can donors and partners see our progress?", "Yes. Invite them with the Guest role. They can view progress without being able to change anything, and they cannot open beneficiary records."],
   ["Can we use our own words?", "Yes. An organization can rename terms such as Beneficiary or Donor, and add its own fields to tasks and projects."],
   ["Does it work on a phone?", "It works in a phone browser. A dedicated mobile app and offline data collection are not available yet."],
-  ["Can I take my data out?", "Tasks download as a spreadsheet and reports print to PDF. A full data export is not built yet."],
+  ["Can I take my data out?", "Much of it. Tasks, budgets, expenses, indicator results, risks and time download as spreadsheets, plans export to Microsoft Project, and calendar files work in any calendar app. Reports print to PDF. A one-click full backup is not built yet."],
+  ["Does it work with Microsoft Project?", "You can exchange plans through Project’s XML format: bring a Project plan into Orbit, or export an Orbit plan to open in Project. A live two-way sync is not available."],
+  ["Can it send alerts to Slack or Teams?", "Yes. Owners and admins can connect a Slack or Microsoft Teams channel and choose which events to send, such as approvals waiting or tasks completed."],
 ];
 
 export default async function Landing() {
@@ -225,6 +228,32 @@ export default async function Landing() {
                 <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-fuchsia-500 text-white shadow-md shadow-brand-600/30"><Icon name={f.icon} /></span>
                 <h3 className="mt-5 text-lg font-semibold tracking-tight">{f.title}</h3>
                 <p className="mt-2 text-slate-600">{f.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───── connects to your tools ───── */}
+      <section id="integrations" className="scroll-mt-16 py-24">
+        <div className="mx-auto max-w-6xl px-5">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-wider text-brand-600">Plays well with others</p>
+            <h2 className="mt-3 text-4xl font-semibold tracking-tight md:text-5xl">Connects to the tools you already use</h2>
+            <p className="mt-4 text-lg text-slate-600">No need to switch everything at once. Bring your plans in, and send information out.</p>
+          </div>
+          <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+            {([
+              ["file", "Excel and CSV", "Import tasks from a spreadsheet and download tasks, budgets, indicators and more."],
+              ["briefcase", "Microsoft Project", "Exchange plans with Project through its XML format, with dates, subtasks and dependencies."],
+              ["tasks", "Calendars", "A private feed for Outlook, Google Calendar and your phone, with your due dates and milestones."],
+              ["bell", "Slack and Teams", "Get a message when an approval is waiting or a task is completed."],
+              ["layers", "API and webhooks", "Connect Zapier, Make or Power Automate, or write your own scripts."],
+              ["chart", "Field data", "Push survey results into your indicators from the tools your field teams use."],
+            ] as [IconName, string, string][]).map(([icon, t, d]) => (
+              <div key={t} className="flex gap-4 rounded-2xl border border-slate-200/70 bg-white p-5 shadow-soft">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-600"><Icon name={icon} /></span>
+                <div><h3 className="font-semibold tracking-tight">{t}</h3><p className="mt-1 text-sm text-slate-600">{d}</p></div>
               </div>
             ))}
           </div>

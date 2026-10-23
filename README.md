@@ -41,6 +41,13 @@ Built as a modular core so other sectors can be added later.
 - **Help center** (guides, roles table built from the real rules, shortcuts, FAQ) and **Share Orbit** (ready-made messages for recommending it)
 - Public landing page with dropdown menus, security section and FAQ
 
+**Connections to other tools**
+- **Excel / CSV**: import tasks (preview first, nothing saved until you confirm); download tasks, budget, expenses, indicators, risks and time
+- **Microsoft Project**: import a plan saved as XML, or export a plan to open in Project (a file exchange, not a live link)
+- **Calendar feed**: a private link for Outlook, Google Calendar and phones; plus a one-off .ics download per project
+- **Slack and Microsoft Teams alerts** and generic signed webhooks, with a delivery log and a test button
+- **Public REST API** with keys, plus an OpenAPI description at `/api/v1/openapi.json`, for Zapier, Make, Power Automate and field-data tools
+
 **Flexibility**
 - Modules switch on / off per organization; custom words ("Beneficiary" becomes "Client"); custom fields
 - Permission matrix in one file: `apps/web/src/config/permissions.ts`
@@ -98,7 +105,8 @@ Handy: `pnpm db:studio` opens a visual database browser.
 
 - This code was checked for syntax errors and for mismatches between pages and the API, but it has **not been run** (no internet in the build environment). Expect small fixes on first run, mostly from library version differences. Send the exact error message and it can be fixed quickly.
 - Money amounts are stored as plain numbers. Before real financial use, switch to integer cents.
-- Not built yet: email sending (invites are links), real file uploads (attachments are links), real-time updates and presence, offline field forms, automations, resource and capacity planning, AI features, billing, public API, a mobile app, tests.
+- Not tested against the real products: the Microsoft Project file was built to the published XML format and checked against my own reader, not opened in Microsoft Project itself; Slack and Teams delivery was built to their documented formats but not sent to real channels. Test each with a small example first.
+- Not built yet: email sending (invites are links), real file uploads (attachments are links), real-time updates and presence, offline field forms, automations, resource and capacity planning, AI features, billing, a live two-way Microsoft Project sync, real .xlsx export (downloads are CSV, which Excel opens), a one-click full backup, a mobile app, automated tests.
 
 ## Never commit
 

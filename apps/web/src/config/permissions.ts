@@ -31,6 +31,7 @@ export const ALL_ACTIONS = [
   "report:manage",
   "customfield:manage",
   "label:manage",
+  "integration:manage",
 ] as const;
 
 export type Action = (typeof ALL_ACTIONS)[number];
