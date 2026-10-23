@@ -13,7 +13,13 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  // Add any other existing config you had here (like allowedDevOrigins if you used it)
+  outputFileTracingIncludes: {
+    '/**/*': [
+      './node_modules/.prisma/client/**/*',
+      '../../packages/db/node_modules/.prisma/client/**/*',
+      '../../node_modules/.pnpm/@prisma+client@*/node_modules/.prisma/client/**/*',
+    ],
+  },
 };
 
 export default nextConfig;
